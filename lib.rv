@@ -1,0 +1,123 @@
+// raven-ini: parse INI / config files for Raven.
+//
+//     import "github.com/martian56/raven-ini" { parse }
+//
+//     match parse(text) {
+//         Ok(ini) -> {
+//             let host = ini.get_or("server", "host", "localhost")
+//             let port = ini.get_or("server", "port", "8080")
+//         },
+//         Err(e) -> print(e.to_string()),
+//     }
+//
+// Sections are `[name]`, entries are `key = value`, and a line starting with
+// `;` or `#` is a comment. Keys before any section live in the global section,
+// which you read with an empty section name "".
+
+import std/string
+import std/collections
+
+// A parse error, with the 1-based line it was found on.
+struct IniError {
+    line: Int,
+    message: String,
+}
+
+impl IniError {
+    fun new(line: Int, message: String) -> IniError {
+        return IniError { line, message }
+    }
+}
+
+impl ToString for IniError {
+    fun to_string(self) -> String {
+        return "ini:${self.line}: ${self.message}"
+    }
+}
+
+// A parsed INI document. Entries are stored under "<section>\x1f<key>"; the
+// accessors hide that, so you just pass a section and a key.
+struct Ini {
+    data: Map<String, String>,
+    section_names: List<String>,
+}
+
+impl Ini {
+    // The value for `key` in `section`, if present. Use "" as the section for
+    // keys that appear before any `[section]` header.
+    fun get(self, section: String, key: String) -> Option<String> {
+        return self.data.get(_compound(section, key))
+    }
+
+    // The value, or `fallback` when it is absent.
+    fun get_or(self, section: String, key: String, fallback: String) -> String {
+        return self.data.get_or(_compound(section, key), fallback)
+    }
+
+    // Whether `section` has `key`.
+    fun has(self, section: String, key: String) -> Bool {
+        return self.data.has(_compound(section, key))
+    }
+
+    // Every key/value in `section`, as a plain map.
+    fun section(self, name: String) -> Map<String, String> {
+        let out: Map<String, String> = Map.new()
+        let prefix = "${name}\u{1f}"
+        let keys = self.data.keys()
+        let i = 0
+        while i < keys.len() {
+            let k = keys[i]
+            if k.starts_with(prefix) {
+                let bare = k.substring(prefix.length(), k.length())
+                out.set(bare, self.data.get_or(k, ""))
+            }
+            i += 1
+        }
+        return out
+    }
+
+    // The section names that were declared, in order.
+    fun sections(self) -> List<String> {
+        return self.section_names
+    }
+}
+
+// Parse INI text into an `Ini`.
+fun parse(text: String) -> Result<Ini, IniError> {
+    let data: Map<String, String> = Map.new()
+    let section_names: List<String> = []
+    let current = ""
+    let lines = text.lines()
+    let i = 0
+    while i < lines.len() {
+        let line = lines[i].trim()
+        let lineno = i + 1
+        if line == "" || line.starts_with(";") || line.starts_with("#") {
+            i += 1
+        } else if line.starts_with("[") {
+            if !line.ends_with("]") {
+                return Err(IniError.new(lineno, "malformed section header"))
+            }
+            current = line.substring(1, line.length() - 1).trim()
+            section_names.push(current)
+            i += 1
+        } else {
+            let eq = line.index_of("=")
+            if eq < 0 {
+                return Err(IniError.new(lineno, "expected key = value"))
+            }
+            let key = line.substring(0, eq).trim()
+            if key == "" {
+                return Err(IniError.new(lineno, "empty key"))
+            }
+            let value = line.substring(eq + 1, line.length()).trim()
+            data.set(_compound(current, key), value)
+            i += 1
+        }
+    }
+    return Ok(Ini { data, section_names })
+}
+
+fun _compound(section: String, key: String) -> String {
+    return "${section}\u{1f}${key}"
+}

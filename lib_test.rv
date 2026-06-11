@@ -1,0 +1,60 @@
+import std/string
+import std/collections
+import std/test { assert_eq_str, assert_true, assert_false, assert_eq_int, assert_msg }
+import "./lib" { parse, Ini }
+
+fun ini(text: String) -> Ini {
+    return match parse(text) {
+        Ok(x) -> x,
+        Err(e) -> {
+            assert_msg(false, e.to_string())
+            let d: Map<String, String> = Map.new()
+            let s: List<String> = []
+            Ini { data: d, section_names: s }
+        },
+    }
+}
+
+fun test_sections_and_keys() {
+    let cfg = ini("[server]\nhost = localhost\nport = 8080\n[db]\nname = app\n")
+    assert_eq_str(cfg.get_or("server", "host", ""), "localhost")
+    assert_eq_str(cfg.get_or("server", "port", ""), "8080")
+    assert_eq_str(cfg.get_or("db", "name", ""), "app")
+    assert_true(cfg.has("server", "host"))
+    assert_false(cfg.has("server", "missing"))
+}
+
+fun test_global_section() {
+    let cfg = ini("title = top level\n[s]\nk = v\n")
+    assert_eq_str(cfg.get_or("", "title", ""), "top level")
+}
+
+fun test_comments_and_blanks() {
+    let cfg = ini("; a comment\n\n# another\n[s]\nk = v\n")
+    assert_eq_str(cfg.get_or("s", "k", ""), "v")
+    assert_eq_int(cfg.sections().len(), 1)
+}
+
+fun test_section_map() {
+    let s = ini("[server]\nhost = h\nport = 9\n").section("server")
+    assert_eq_str(s.get_or("host", ""), "h")
+    assert_eq_int(s.len(), 2)
+}
+
+fun test_default_when_missing() {
+    assert_eq_str(ini("[s]\nk = v\n").get_or("s", "nope", "fallback"), "fallback")
+}
+
+fun test_malformed_section_errors() {
+    match parse("[unterminated\nk=v\n") {
+        Ok(x) -> assert_msg(false, "expected error"),
+        Err(e) -> assert_eq_int(e.line, 1),
+    }
+}
+
+fun test_missing_equals_errors() {
+    match parse("[s]\nbroken line\n") {
+        Ok(x) -> assert_msg(false, "expected error"),
+        Err(e) -> assert_true(e.message.contains("key = value")),
+    }
+}
