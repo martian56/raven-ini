@@ -1,5 +1,7 @@
 # raven-ini
 
+[![CI](https://github.com/martian56/raven-ini/actions/workflows/ci.yml/badge.svg)](https://github.com/martian56/raven-ini/actions/workflows/ci.yml)
+
 Reads INI-style config: `[sections]`, `key = value`, and `;` or `#` comments.
 Keys before the first section go in the global section, which you read with an
 empty name. No dependencies.
@@ -8,12 +10,12 @@ empty name. No dependencies.
 
 ```toml
 [dependencies]
-"github.com/martian56/raven-ini" = "0.1"
+"github.com/martian56/raven-ini" = "v0.1.0"
 ```
 
 ## Usage
 
-```raven
+```rust
 import "github.com/martian56/raven-ini" { parse }
 
 let text = "[server]\nhost = 0.0.0.0\nport = 8080\n"
@@ -29,7 +31,7 @@ match parse(text) {
 A key that appears before any `[section]` lives in the global section, which you
 read with `""` as the section name:
 
-```raven
+```rust
 cfg.get_or("", "title", "")
 ```
 
