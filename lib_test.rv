@@ -1,17 +1,17 @@
-import std/string
-import std/collections
-import std/test { assert_eq_str, assert_true, assert_false, assert_eq_int, assert_msg }
-import "./lib" { parse, Ini }
+import std.string
+import std.collections
+from std.test import assert_eq_str, assert_true, assert_false, assert_eq_int, assert_msg
+from "./lib" import parse, Ini
 
-fun ini(text: String) -> Ini {
+fun ini(text: str) -> Ini {
     return match parse(text) {
-        Ok(x) -> x,
-        Err(e) -> {
+        case Ok(x) { x }
+        case Err(e) {
             assert_msg(false, e.to_string())
-            let d: Map<String, String> = Map.new()
-            let s: List<String> = []
-            Ini { data: d, section_names: s }
-        },
+            let d: dict[str, str] = Map.new()
+            let s: list[str] = []
+            Ini(data: d, section_names: s)
+        }
     }
 }
 
@@ -47,14 +47,14 @@ fun test_default_when_missing() {
 
 fun test_malformed_section_errors() {
     match parse("[unterminated\nk=v\n") {
-        Ok(x) -> assert_msg(false, "expected error"),
-        Err(e) -> assert_eq_int(e.line, 1),
+        case Ok(x) { assert_msg(false, "expected error") }
+        case Err(e) { assert_eq_int(e.line, 1) }
     }
 }
 
 fun test_missing_equals_errors() {
     match parse("[s]\nbroken line\n") {
-        Ok(x) -> assert_msg(false, "expected error"),
-        Err(e) -> assert_true(e.message.contains("key = value")),
+        case Ok(x) { assert_msg(false, "expected error") }
+        case Err(e) { assert_true(e.message.contains("key = value")) }
     }
 }
