@@ -1,6 +1,6 @@
 // raven-ini: parse INI / config files for Raven.
 //
-//     import "github.com/martian56/raven-ini" { parse }
+//     from "github.com/martian56/raven-ini" import parse
 //
 //     match parse(text) {
 //         Ok(ini) -> {
@@ -14,57 +14,57 @@
 // `;` or `#` is a comment. Keys before any section live in the global section,
 // which you read with an empty section name "".
 
-import std/string
-import std/collections
+import std.string
+import std.collections
 
 // A parse error, with the 1-based line it was found on.
-struct IniError {
-    line: Int,
-    message: String,
+class IniError {
+    line: int
+    message: str
 }
 
 impl IniError {
-    fun new(line: Int, message: String) -> IniError {
-        return IniError { line, message }
+    fun new(line: int, message: str) -> IniError {
+        return IniError(line: line, message: message)
     }
 }
 
 impl ToString for IniError {
-    fun to_string(self) -> String {
+    fun to_string(self) -> str {
         return "ini:${self.line}: ${self.message}"
     }
 }
 
-// A parsed INI document. Entries are stored under "<section>\x1f<key>"; the
+// A parsed INI document. Entries are stored under "<section>\x1f[key]"; the
 // accessors hide that, so you just pass a section and a key.
-struct Ini {
-    data: Map<String, String>,
-    section_names: List<String>,
+class Ini {
+    data: dict[str, str]
+    section_names: list[str]
 }
 
 impl Ini {
     // The value for `key` in `section`, if present. Use "" as the section for
     // keys that appear before any `[section]` header.
-    fun get(self, section: String, key: String) -> Option<String> {
+    fun get(self, section: str, key: str) -> Option[str] {
         return self.data.get(_compound(section, key))
     }
 
     // The value, or `fallback` when it is absent.
-    fun get_or(self, section: String, key: String, fallback: String) -> String {
+    fun get_or(self, section: str, key: str, fallback: str) -> str {
         return self.data.get_or(_compound(section, key), fallback)
     }
 
     // Whether `section` has `key`.
-    fun has(self, section: String, key: String) -> Bool {
+    fun has(self, section: str, key: str) -> bool {
         return self.data.has(_compound(section, key))
     }
 
     // Every key/value in `section`, as a plain map.
-    fun section(self, name: String) -> Map<String, String> {
-        let out: Map<String, String> = Map.new()
+    fun section(self, name: str) -> dict[str, str] {
+        let out: dict[str, str] = Map.new()
         let prefix = "${name}\u{1f}"
         let keys = self.data.keys()
-        let i = 0
+        var i = 0
         while i < keys.len() {
             let k = keys[i]
             if k.starts_with(prefix) {
@@ -77,25 +77,25 @@ impl Ini {
     }
 
     // The section names that were declared, in order.
-    fun sections(self) -> List<String> {
+    fun sections(self) -> list[str] {
         return self.section_names
     }
 }
 
 // Parse INI text into an `Ini`.
-fun parse(text: String) -> Result<Ini, IniError> {
-    let data: Map<String, String> = Map.new()
-    let section_names: List<String> = []
-    let current = ""
+fun parse(text: str) -> Result[Ini, IniError] {
+    let data: dict[str, str] = Map.new()
+    let section_names: list[str] = []
+    var current = ""
     let lines = text.lines()
-    let i = 0
+    var i = 0
     while i < lines.len() {
         let line = lines[i].trim()
         let lineno = i + 1
-        if line == "" || line.starts_with(";") || line.starts_with("#") {
+        if line == "" or line.starts_with(";") or line.starts_with("#") {
             i += 1
         } else if line.starts_with("[") {
-            if !line.ends_with("]") {
+            if not line.ends_with("]") {
                 return Err(IniError.new(lineno, "malformed section header"))
             }
             current = line.substring(1, line.length() - 1).trim()
@@ -115,9 +115,9 @@ fun parse(text: String) -> Result<Ini, IniError> {
             i += 1
         }
     }
-    return Ok(Ini { data, section_names })
+    return Ok(Ini(data: data, section_names: section_names))
 }
 
-fun _compound(section: String, key: String) -> String {
+fun _compound(section: str, key: str) -> str {
     return "${section}\u{1f}${key}"
 }

@@ -10,21 +10,21 @@ empty name. No dependencies.
 
 ```toml
 [dependencies]
-"github.com/martian56/raven-ini" = "v0.1.0"
+"github.com/martian56/raven-ini" = "v0.2.0"
 ```
 
 ## Usage
 
 ```rust
-import "github.com/martian56/raven-ini" { parse }
+from "github.com/martian56/raven-ini" import parse
 
 let text = "[server]\nhost = 0.0.0.0\nport = 8080\n"
 match parse(text) {
-    Ok(cfg) -> {
+    case Ok(cfg) {
         let host = cfg.get_or("server", "host", "localhost")
         let port = cfg.get_or("server", "port", "80")
-    },
-    Err(e) -> print(e.to_string()),   // "ini:3: expected key = value"
+    }
+    case Err(e) { print(e.to_string()) }   // "ini:3: expected key = value"
 }
 ```
 
@@ -37,7 +37,7 @@ cfg.get_or("", "title", "")
 
 ## What's there
 
-`get(section, key)` returns an `Option<String>`, and `get_or(section, key,
+`get(section, key)` returns an `Option[str]`, and `get_or(section, key,
 fallback)` falls back when it's missing. `has(section, key)` is the presence
 check. `section(name)` hands you a plain map of one section's keys, and
 `sections()` lists the section names in order.

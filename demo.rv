@@ -1,12 +1,12 @@
-// Build and run: raven build demo.rv -o demo && ./demo
-import std/io { println }
-import std/string
-import "./lib" { parse }
+// Build and run: raven build demo.rv -o demo and ./demo
+from std.io import println
+import std.string
+from "./lib" import parse
 
 fun main() {
     let text = "; app config\n[server]\nhost = 0.0.0.0\nport = 8080\n\n[db]\nname = appdb\nuser = raven\n"
     match parse(text) {
-        Ok(cfg) -> {
+        case Ok(cfg) {
             println(
                 "server: ".concat(cfg.get_or("server", "host", "")).concat(":").concat(
                     cfg.get_or("server", "port", ""),
@@ -18,7 +18,7 @@ fun main() {
                 ),
             )
             println("sections: ".concat(cfg.sections().len().to_string()))
-        },
-        Err(e) -> println(e.to_string()),
+        }
+        case Err(e) { println(e.to_string()) }
     }
 }
