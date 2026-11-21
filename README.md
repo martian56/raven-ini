@@ -10,7 +10,7 @@ empty name. No dependencies.
 
 ```toml
 [dependencies]
-"github.com/martian56/raven-ini" = "v0.1.0"
+"github.com/martian56/raven-ini" = "v0.2.0"
 ```
 
 ## Usage
